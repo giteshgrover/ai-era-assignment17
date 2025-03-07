@@ -1,0 +1,7 @@
+torch>=1.8.0
+torchvision>=0.9.0
+pytest>=6.0.0
+numpy>=1.19.0
+torchsummary>=1.5.1
+tqdm
+matplotlib>=3.0.0
