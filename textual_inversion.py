@@ -9,12 +9,13 @@ from diffusers import StableDiffusionPipeline
 from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
 
 class TextualInversion:
-    def __init__(self, pretrained_model_name_or_path = "CompVis/stable-diffusion-v1-4", repo_id_embeds=["sd-concepts-library/cat-toy", "sd-concepts-library/dragonborn", "sd-concepts-library/birb-style"]):
+    def __init__(self, pretrained_model_name_or_path = "CompVis/stable-diffusion-v1-4", repo_id_embeds=["sd-concepts-library/matrix::with <hatman-matrix> concept"]):
         #@markdown `pretrained_model_name_or_path` which Stable Diffusion checkpoint you want to use. This should match the one used for training the embeddings.
         self.pretrained_model_name_or_path = pretrained_model_name_or_path
         #@title Load your concept here
     #@markdown Enter the `repo_id` for a concept you like (you can find pre-learned concepts in the public [SD Concepts Library](https://huggingface.co/sd-concepts-library))
-        self.repo_id_embeds = repo_id_embeds
+        self.repo_id_embeds = [x.split("::")[0] for x in repo_id_embeds]
+        self.prompts_suffixes = [x.split("::")[1] for x in repo_id_embeds]
        
        # Set device
         self.device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
@@ -27,23 +28,24 @@ class TextualInversion:
         ).to(self.device)
 
         self.generators = []
-        self.textInversionPrompts = []
+        # self.textInversionPrompts = []
         for index,repo_id in enumerate(self.repo_id_embeds):
             #@title Load the concept into pipeline
             self.pipe.load_textual_inversion(repo_id)
             self.generators.append(torch.Generator(device=self.device).manual_seed(index + 11))
-            self.textInversionPrompts.append(f" with <{repo_id}> on it")
+            # self.textInversionPrompts.append(f" with <{repo_id}> on it")
         #@title Run the Stable Diffusion pipeline
         #@markdown Don't forget to use the placeholder token in your prompt
 
     def generate_image(self, prompt, concept_index):
         # # Get the index of the selected concept
         # concept_index = self.repo_id_embeds.index(selected_concept)
+        prompt_to_send =  prompt + " " + self.prompts_suffixes[concept_index]
         
-        print(f"Generating image for concept: {self.repo_id_embeds[concept_index]} with generator: {self.generators[concept_index].manual_seed}")
+        print(f"Generating image for concept: {self.repo_id_embeds[concept_index]} with prompt: {prompt_to_send} and generator: {self.generators[concept_index].manual_seed}")
+
         # Generate the image
-        result = self.pipe(
-            prompt + f" with <{self.repo_id_embeds[concept_index]}>", 
+        result = self.pipe(prompt_to_send, 
             num_images_per_prompt=1,
             num_inference_steps=50,
             guidance_scale=7.5,

@@ -1,8 +1,13 @@
 import gradio as gr
 from textual_inversion import TextualInversion
 
-display_choices = ["cat toy", "dragon born", "birb style", "pool rooms", "minecraft concept art"]
-repo_id_embeds=["sd-concepts-library/cat-toy", "sd-concepts-library/dragonborn", "sd-concepts-library/birb-style", "sd-concepts-library/poolrooms", "sd-concepts-library/minecraft-concept-art"]
+display_choices = ["minecraft concept art", "dragon born", "birb style", "pool rooms", "matrix"]
+repo_id_embeds=["sd-concepts-library/minecraft-concept-art::with <minecraft-concept-art> concept",
+                "sd-concepts-library/dragonborn::with <dragonborn> concept", 
+                "sd-concepts-library/birb-style::in <birb-style> concept", 
+                "sd-concepts-library/poolrooms::with <poolrooms> concept", 
+                "sd-concepts-library/matrix::in <hatman-matrix> world"
+                ]
 
 textualInversion = TextualInversion(pretrained_model_name_or_path = "CompVis/stable-diffusion-v1-4", repo_id_embeds=repo_id_embeds)
 
@@ -18,7 +23,8 @@ demo = gr.Interface(
     outputs=gr.Image(label="Generated Image"),
     title="Textual Inversion Image Generator",
     description="Generate images using textual inversion concepts",
-    examples=[["a graffiti in a favela wall", display_choices[0]]],
+    examples=[["a flying dog", display_choices[0]]],
+    allow_flagging=False
 )
 
 # Launch the app
