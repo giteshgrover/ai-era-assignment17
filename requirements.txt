@@ -5,3 +5,13 @@ numpy>=1.19.0
 torchsummary>=1.5.1
 tqdm
 matplotlib>=3.0.0
+diffusers==0.16.1
+# diffusers==0.21.4
+ftfy
+# transformers==4.35.0
+transformers
+accelerate
+safetensors
+Pillow
+huggingface-hub==0.25.2
+gradio
