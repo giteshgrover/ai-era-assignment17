@@ -216,7 +216,8 @@ class TextualInversion:
             noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
 
             if consider_blue_loss:
-                latents = self.update_latents_with_blue_loss(latents, noise_pred, self.scheduler.sigmas[i], print_loss=True)
+                print_loss = True if i%10==0 else False
+                latents = self.update_latents_with_blue_loss(latents, noise_pred, self.scheduler.sigmas[i], print_loss=print_loss)
 
             # compute the previous noisy sample x_t -> x_t-1
             latents = self.scheduler.step(noise_pred, t, latents).prev_sample
