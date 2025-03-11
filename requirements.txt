@@ -15,3 +15,4 @@ safetensors
 Pillow
 huggingface-hub==0.25.2
 gradio
+opencv-python

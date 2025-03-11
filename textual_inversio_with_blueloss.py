@@ -11,6 +11,7 @@ from typing import List, Optional, Tuple, Union
 from torchvision import transforms as tfms
 from diffusers import StableDiffusionPipeline, AutoencoderKL, LMSDiscreteScheduler, UNet2DConditionModel
 from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
+from focus_blur_utils import calculate_focus_blur_loss
 # from transformers.modeling_attn_mask_utils import AttentionMaskConverter
 
 class TextualInversion:
@@ -145,9 +146,34 @@ class TextualInversion:
         pil_images = [Image.fromarray(image) for image in images]
         return pil_images
     
+    def grayscale_loss(self, images):
+        """
+        Calculate the grayscale loss, which measures how far the image is from being grayscale.
+        A grayscale image has R = G = B for each pixel.
+        
+        Args:
+            images (torch.Tensor): A tensor of shape (batch_size, 3, H, W) where 3 corresponds to 
+                                the RGB channels of the image.
+        
+        Returns:
+            torch.Tensor: A scalar loss value indicating how far the image is from being grayscale.
+        """
+        # Calculate the absolute difference between the channels
+        # images[:, 0] -> Red channel, images[:, 1] -> Green channel, images[:, 2] -> Blue channel
+        rg_diff = torch.abs(images[:, 0] - images[:, 1])  # R - G
+        gb_diff = torch.abs(images[:, 1] - images[:, 2])  # G - B
+        rb_diff = torch.abs(images[:, 0] - images[:, 2])  # R - B
+
+        # Compute the mean of these differences across the batch and image dimensions
+        loss = torch.mean(rg_diff + gb_diff + rb_diff)
+
+        return loss
+
     def blue_loss(self, images):
         # How far are the blue channel values to 0.9:
-        error = torch.abs(images[:,2] - 0.9).mean() # [:,2] -> all images in batch, only the blue channel
+        # error = torch.abs(images[:,2] - 0.9).mean() # [:,2] -> all images in batch, only the blue channel
+        # Call grayscale loss instead of blue loss
+        error = self.grayscale_loss(images)
         return error
     
     def update_latents_with_blue_loss(self, latents, noise_pred, sigma, blue_loss_scale=50, print_loss = False):
@@ -225,13 +251,13 @@ class TextualInversion:
         return self.latents_to_pil(latents)
 
         
-    def generate_image(self, prompt, concept_index, background_blur=False):
+    def generate_image(self, prompt, concept_index, grayscale_image=False):
         # # Get the index of the selected concept
         # concept_index = self.repo_id_embeds.index(selected_concept)
         prompt_to_send =  prompt + " " + self.prompts_suffixes[concept_index]
         print(f"Selected concept_index: {concept_index}.")
         print(f"concept_index: {concept_index} Generating image for concept: {self.repo_id_embeds[concept_index]} with prompt: {prompt_to_send}")
-        print(f"Background blur: {background_blur}")
+        print(f"Grayscale image: {grayscale_image}")
         
         # replace <..> with a placeholder token that can be easily replaced with the embediing after tokenization
         placeholder_text = "gloucestershire " # 33789 is the token id 
@@ -266,6 +292,6 @@ class TextualInversion:
         print(f"manual_seed: {concept_index + 11}")
         generator = torch.manual_seed(concept_index + 11)
         # And generate an image with this:
-        result = self.generate_with_embs(modified_output_embeddings, generator=generator, max_length=T, consider_blue_loss=background_blur)[0]
+        result = self.generate_with_embs(modified_output_embeddings, generator=generator, max_length=T, consider_blue_loss=grayscale_image)[0]
         
         return result
