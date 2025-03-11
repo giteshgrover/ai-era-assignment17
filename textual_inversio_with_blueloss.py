@@ -145,7 +145,38 @@ class TextualInversion:
         pil_images = [Image.fromarray(image) for image in images]
         return pil_images
     
-    def generate_with_embs(self, text_embeddings, generator, max_length,batch_size = 1):
+    def blue_loss(self, images):
+        # How far are the blue channel values to 0.9:
+        error = torch.abs(images[:,2] - 0.9).mean() # [:,2] -> all images in batch, only the blue channel
+        return error
+    
+    def update_latents_with_blue_loss(self, latents, noise_pred, sigma, blue_loss_scale=50, print_loss = False):
+        # Requires grad on the latents
+        latents = latents.detach().requires_grad_()
+
+        # Get the predicted x0:
+        latents_x0 = latents - sigma * noise_pred
+        # latents_x0 = scheduler.step(noise_pred, t, latents).pred_original_sample
+
+        # Decode to image space
+        denoised_images = self.vae.decode((1 / 0.18215) * latents_x0).sample / 2 + 0.5 # range (0, 1)
+
+        # Calculate loss
+        loss = self.blue_loss(denoised_images) * blue_loss_scale
+
+        # # Occasionally print it out
+        if print_loss:
+            print('loss:', loss.item())
+
+        # Get gradient
+        cond_grad = torch.autograd.grad(loss, latents)[0]
+
+        # Modify the latents based on this gradient
+        latents = latents.detach() - cond_grad * sigma**2
+
+        return latents
+    
+    def generate_with_embs(self, text_embeddings, generator, max_length, batch_size = 1, consider_blue_loss = False):
         height = 512                        # default height of Stable Diffusion
         width = 512                         # default width of Stable Diffusion
         num_inference_steps = 50            # Number of denoising steps
@@ -174,7 +205,6 @@ class TextualInversion:
         for i, t in tqdm(enumerate(self.scheduler.timesteps), total=len(self.scheduler.timesteps)):
             # expand the latents if we are doing classifier-free guidance to avoid doing two forward passes.
             latent_model_input = torch.cat([latents] * 2)
-            sigma = self.scheduler.sigmas[i]
             latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
 
             # predict the noise residual
@@ -184,6 +214,9 @@ class TextualInversion:
             # perform guidance
             noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
             noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
+
+            if consider_blue_loss:
+                latents = self.update_latents_with_blue_loss(latents, noise_pred, self.scheduler.sigmas[i], print_loss=True)
 
             # compute the previous noisy sample x_t -> x_t-1
             latents = self.scheduler.step(noise_pred, t, latents).prev_sample
@@ -232,6 +265,6 @@ class TextualInversion:
         print(f"manual_seed: {concept_index + 11}")
         generator = torch.manual_seed(concept_index + 11)
         # And generate an image with this:
-        result = self.generate_with_embs(modified_output_embeddings, generator=generator, max_length=T)[0]
+        result = self.generate_with_embs(modified_output_embeddings, generator=generator, max_length=T, consider_blue_loss=background_blur)[0]
         
         return result
