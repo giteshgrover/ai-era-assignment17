@@ -19,8 +19,9 @@ This is a simple gradio app that allows you to generate images using textual inv
 
 1. Enter your prompt in the text input field
 2. Select the concept from the dropdown menu
-3. Click on the generate button
-4. The image will be generated and displayed on the screen
+3. Optionally, check the checkbox to generate a grayscale image
+4. Click on the generate button
+5. The image will be generated and displayed on the screen
 
 ## How to setup and run the app
 
