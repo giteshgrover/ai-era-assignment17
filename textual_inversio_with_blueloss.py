@@ -54,7 +54,6 @@ class TextualInversion:
         self.position_ids = self.text_encoder.text_model.embeddings.position_ids
         self.position_emb_layer = self.text_encoder.text_model.embeddings.position_embedding
         
-        self.generators = []
         self.conceptsEmbeddings = []
         for index,repo_id in enumerate(self.repo_id_embeds):
             #@title Load the concept into pipeline
@@ -67,10 +66,7 @@ class TextualInversion:
                 first_key, concept_embed = next(iter(concept_embed_lib.items())) # Read the first key and the embedding value
             
             self.conceptsEmbeddings.append(concept_embed.to(self.device))
-            # self.generators.append(torch.Generator(device=self.device).manual_seed(index + 11))
-            self.generators.append(torch.manual_seed(index + 11))
         print(f"len(self.conceptsEmbeddings): {len(self.conceptsEmbeddings)}")
-        print(f"len(self.generators): {len(self.generators)}")
 
     def _create_4d_causal_attention_mask(
         input_shape: Union[torch.Size, Tuple, List],
@@ -200,7 +196,7 @@ class TextualInversion:
         # concept_index = self.repo_id_embeds.index(selected_concept)
         prompt_to_send =  prompt + " " + self.prompts_suffixes[concept_index]
         print(f"Selected concept_index: {concept_index}.")
-        print(f"concept_index: {concept_index} Generating image for concept: {self.repo_id_embeds[concept_index]} with prompt: {prompt_to_send} and generator: {self.generators[concept_index]}")
+        print(f"concept_index: {concept_index} Generating image for concept: {self.repo_id_embeds[concept_index]} with prompt: {prompt_to_send}")
         print(f"Background blur: {background_blur}")
         
         # replace <..> with a placeholder token that can be easily replaced with the embediing after tokenization
@@ -233,7 +229,9 @@ class TextualInversion:
         #  Feed through to get final output embs
         modified_output_embeddings = self.get_output_embeds(input_embeddings)
 
+        print(f"manual_seed: {concept_index + 11}")
+        generator = torch.manual_seed(concept_index + 11)
         # And generate an image with this:
-        result = self.generate_with_embs(modified_output_embeddings, generator=self.generators[concept_index], max_length=T)[0]
+        result = self.generate_with_embs(modified_output_embeddings, generator=generator, max_length=T)[0]
         
         return result
