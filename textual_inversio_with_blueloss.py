@@ -11,7 +11,7 @@ from typing import List, Optional, Tuple, Union
 from torchvision import transforms as tfms
 from diffusers import StableDiffusionPipeline, AutoencoderKL, LMSDiscreteScheduler, UNet2DConditionModel
 from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
-from focus_blur_utils import calculate_focus_blur_loss
+# from focus_blur_utils import calculate_focus_blur_loss
 # from transformers.modeling_attn_mask_utils import AttentionMaskConverter
 
 class TextualInversion:

@@ -1,12 +1,12 @@
 import gradio as gr
 from textual_inversio_with_blueloss import TextualInversion
 
-display_choices = ["minecraft concept art", "dragon born", "birb style", "pool rooms", "matrix"]
-repo_id_embeds=["sd-concepts-library/minecraft-concept-art::with <minecraft-concept-art> concept",
+display_choices = ["matrix", "dragon born", "birb style", "pool rooms", "minecraft concept art"]
+repo_id_embeds=["sd-concepts-library/matrix::in <hatman-matrix> world",
                 "sd-concepts-library/dragonborn::with <dragonborn> concept", 
                 "sd-concepts-library/birb-style::in <birb-style> concept", 
                 "sd-concepts-library/poolrooms::with <poolrooms>", 
-                "sd-concepts-library/matrix::in <hatman-matrix> world"
+                "sd-concepts-library/minecraft-concept-art::with <minecraft-concept-art> concept"
                 ]
 
 textualInversion = TextualInversion(pretrained_model_name_or_path = "CompVis/stable-diffusion-v1-4", repo_id_embeds=repo_id_embeds)
