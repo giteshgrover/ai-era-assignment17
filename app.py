@@ -1,18 +1,18 @@
 import gradio as gr
-from textual_inversion import TextualInversion
+from textual_inversio_with_blueloss import TextualInversion
 
 display_choices = ["minecraft concept art", "dragon born", "birb style", "pool rooms", "matrix"]
 repo_id_embeds=["sd-concepts-library/minecraft-concept-art::with <minecraft-concept-art> concept",
                 "sd-concepts-library/dragonborn::with <dragonborn> concept", 
                 "sd-concepts-library/birb-style::in <birb-style> concept", 
-                "sd-concepts-library/poolrooms::with <poolrooms> concept", 
+                "sd-concepts-library/poolrooms::with <poolrooms>", 
                 "sd-concepts-library/matrix::in <hatman-matrix> world"
                 ]
 
 textualInversion = TextualInversion(pretrained_model_name_or_path = "CompVis/stable-diffusion-v1-4", repo_id_embeds=repo_id_embeds)
 
 def generate_image(prompt, selected_concept):
-    return textualInversion.generate_image(prompt, display_choices.index(selected_concept))
+    return textualInversion.generate_image(prompt, display_choices.index(selected_concept), background_blur=False)
 
 demo = gr.Interface(
     fn=generate_image,
